@@ -13,4 +13,4 @@
 - [OpenCV documentation](https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html) — estimation, pose recovery, and camera models.
 - [UZH-FPV data and calibration](https://fpv.ifi.uzh.ch/datasets/) — sequence selection, calibration, and ground truth.
 
-PDFs are stored locally and excluded from Git. See the [source review](../docs/source-review.md) for detailed recommendations.
+PDFs are stored locally and excluded from Git.
