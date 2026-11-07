@@ -1,0 +1,500 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Linear Algebra -- course project report template, Autumn 2026
+%% Ukrainian Catholic University, Faculty of Applied Sciences,
+%% Data Science Master Programme
+%%
+%% The title page is adapted from a template by WikiBooks, distributed
+%% by LaTeXTemplates.com under CC BY-NC-SA 3.0.
+%%
+%% HOW TO USE THIS TEMPLATE
+%%   1. Fill in the block marked "FILL IN" below: the stage of the report,
+%%      the title, the authors, the project card and the links.
+%%   2. One file serves all three milestones. Keep working in the same
+%%      file: interim report 1 grows into interim report 2, and that grows
+%%      into the final report.
+%%   3. Replace the grey guidance boxes with your own text. Before you
+%%      submit, set \showguidefalse so that any box you forgot disappears.
+%%   4. Do NOT change the font size, the paper size or the margins.
+%%      Page limits are counted in this format.
+%%   5. Compile with pdfLaTeX (the Overleaf default). The folder must
+%%      contain UCU-Apps.png (the logo); the example figure uses an image
+%%      shipped with every TeX distribution.
+%%
+%% PAGE LIMITS (counted automatically; see the end of the log file)
+%%   Interim reports 1 and 2: 2 pages, project card included.
+%%   Final report: at most 10 pages from the abstract to the end of the
+%%   Conclusion, figures and tables included. The title page, the
+%%   references and the appendices are not counted.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[11pt,a4paper]{article}
+
+%----------------------------------------------------------------------
+%  Page layout: do not change
+%----------------------------------------------------------------------
+\usepackage[a4paper,left=20mm,right=20mm,top=20mm,bottom=25mm,
+            headheight=14pt,marginparwidth=16mm]{geometry}
+
+%----------------------------------------------------------------------
+%  Packages
+%----------------------------------------------------------------------
+\usepackage[english]{babel}
+% T1 encoding only together with the scalable Latin Modern fonts
+% (standard on Overleaf); otherwise fall back to the default encoding.
+\IfFileExists{lmodern.sty}{\usepackage[T1]{fontenc}\usepackage{lmodern}}{}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx}
+\usepackage{caption,subcaption}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{fancyhdr}
+\usepackage{refcount}
+\usepackage{listings}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+% Margin notes are useful while drafting. Add the option "disable"
+% before you submit, or simply delete your \todo{} commands.
+\usepackage[colorinlistoftodos,textsize=scriptsize]{todonotes}
+\usepackage[colorlinks=true,linkcolor=MidnightBlue,citecolor=MidnightBlue,
+            urlcolor=MidnightBlue]{hyperref}   % load hyperref last
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  FILL IN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Stage of the report: 1 = interim report 1 (scoping memo),
+%                      2 = interim report 2 (working baseline),
+%                      3 = final report
+\newcommand{\stage}{3}
+
+\newcommand{\reporttitle}{Recommending films by low-rank matrix completion:
+  alternating least squares versus singular value thresholding}
+\newcommand{\shorttitle}{Low-rank matrix completion for recommendations}
+\newcommand{\reportauthors}{Augusta Ada \textsc{Lovelace}\\
+  Charles \textsc{Babbage}}
+
+% Project card: one line each. Keep it consistent with your registration;
+% if something has changed, update it here and say so in the report.
+\newcommand{\carddomain}{Recommender systems}
+\newcommand{\cardmethod}{SVD and low-rank approximation}
+\newcommand{\cardobject}{The $943\times1682$ ratings matrix, about 6\% of
+  entries observed, approximated by a matrix of rank $k\le 20$}
+\newcommand{\cardalgorithms}{Alternating least squares (own implementation);
+  singular value thresholding (own iteration, library SVD)}
+\newcommand{\carddata}{MovieLens 100K~\cite{MovieLens}}
+\newcommand{\cardcode}{\url{https://github.com/your-team/your-repo}}
+\newcommand{\cardvideo}{\url{https://link-to-your-recording}} % final only
+
+% Guidance boxes: set \showguidefalse before you submit.
+\newif\ifshowguide
+\showguidetrue
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Template machinery: no need to read further than the next block
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Notation used in the course. Add your own macros here.
+\newcommand{\bR}{\mathbb{R}}
+\newcommand{\bC}{\mathbb{C}}
+\newcommand{\ba}{\mathbf{a}}
+\newcommand{\bb}{\mathbf{b}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bz}{\mathbf{z}}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\cond}{cond}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\trace}{trace}
+\DeclareMathOperator{\nnz}{nnz}
+\DeclareMathOperator*{\argmin}{argmin}
+
+% Theorem-like environments, numbered within sections
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Code listings
+\lstset{language=Python, basicstyle=\ttfamily\small, columns=fullflexible,
+  keepspaces=true, frame=lines, numbers=left, numberstyle=\tiny\color{gray},
+  commentstyle=\color{gray}, keywordstyle=\color{MidnightBlue}\bfseries,
+  showstringspaces=false, breaklines=true}
+
+% Guidance boxes
+\newcommand{\guide}[1]{\ifshowguide\par\smallskip\noindent
+  \colorbox{gray!12}{\parbox{\dimexpr\linewidth-2\fboxsep}{\small\itshape
+  \textbf{Guidance.} #1}}\par\smallskip\fi}
+
+% Stage names
+\newcommand{\stagename}{\ifcase\stage\or Interim report 1: scoping memo\or
+  Interim report 2: working baseline\or Final report\fi}
+
+% Running heads
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\shorttitle}
+\fancyhead[R]{\small\stagename}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Project card
+\newcommand{\projectcard}{%
+  \noindent
+  \begin{tabularx}{\linewidth}{@{}>{\raggedright\bfseries}p{3.0cm}
+                                  >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    Domain        & \carddomain \\
+    Method family & \cardmethod \\
+    LA object     & \cardobject \\
+    Algorithms    & \cardalgorithms \\
+    Data          & \carddata \\
+    \ifnum\stage>1 Code & \cardcode \\ \fi
+    \ifnum\stage=3 Recording & \cardvideo \\ \fi
+    \bottomrule
+  \end{tabularx}\par}
+
+% Page counting: the main body runs from \bodystart to \bodyend
+\newcommand{\pagelimit}{\ifnum\stage=3 10\else 2\fi}
+\newcommand{\bodystart}{\label{body-start}}
+\newcommand{\bodyend}{\label{body-end}}
+\AtEndDocument{%
+  \refused{body-start}\refused{body-end}%
+  \edef\bodypages{\number\numexpr\getpagerefnumber{body-end}
+    -\getpagerefnumber{body-start}+1\relax}%
+  \typeout{}%
+  \typeout{*** Main body: \bodypages\space page(s); limit \pagelimit.}%
+  \typeout{}%
+  \ifnum\bodypages>\pagelimit\relax
+    \PackageWarningNoLine{LA-template}{Main body has \bodypages\space pages,
+      above the limit of \pagelimit}%
+  \fi}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ifnum\stage=3
+%----------------------------------------------------------------------
+%  Final report: title page (not counted)
+%----------------------------------------------------------------------
+\begin{titlepage}
+  \centering
+  {\large\scshape Ukrainian Catholic University\par}
+  {\scshape Faculty of Applied Sciences\quad$\cdot$\quad
+    Data Science Master Programme\par}
+  \vspace{1.6cm}
+  \rule{\linewidth}{0.5mm}\par\vspace{0.4cm}
+  {\LARGE\bfseries \reporttitle\par}
+  \vspace{0.3cm}
+  {\large Linear Algebra: course project, final report\par}
+  \vspace{0.2cm}
+  \rule{\linewidth}{0.5mm}\par
+  \vspace{1.2cm}
+  {\large\emph{Authors:}\par\smallskip \reportauthors\par}
+  \vspace{1.2cm}
+  \projectcard
+  \vfill
+    \IfFileExists{UCU-Apps.png}{\includegraphics[height=4cm]{UCU-Apps.png}\par}{}
+  \vspace{0.2cm}
+  {\large \today\par}
+\end{titlepage}
+
+%----------------------------------------------------------------------
+%  Abstract: opens the first page of the main body
+%----------------------------------------------------------------------
+\bodystart
+\begin{abstract}
+\guide{Five to eight sentences: the problem, the linear-algebra object,
+the methods you compared, the main quantitative result, and the main
+limitation. Write it last.}
+We compare two algorithms for completing a partially observed ratings
+matrix by a matrix of low rank~\cite[Sec.~III.5]{Strang}.
+\end{abstract}
+
+\else
+%----------------------------------------------------------------------
+%  Interim reports: compact header and project card (counted)
+%----------------------------------------------------------------------
+\bodystart
+\begin{center}
+  {\Large\bfseries \reporttitle\par}
+  \medskip
+  {\large \stagename\par}
+  \smallskip
+  \begin{tabular}{c}\reportauthors\end{tabular}\par
+  \smallskip
+  {\small Linear Algebra, UCU Data Science Master Programme, \today\par}
+\end{center}
+\projectcard
+\medskip
+\fi
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Problem and motivation}
+\label{sec:problem}
+
+\guide{Criterion A. What goes in, what comes out, and why it matters in
+practice. Who uses a solution to this problem, and what goes wrong
+without a good one? Give a short overview of the approaches in the
+literature and say which ones you chose and why.
+\emph{Interim report 1}: half a page.}
+
+Your introduction goes here.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Linear-algebra formulation}
+\label{sec:formulation}
+
+\guide{Criterion A. State the problem precisely as a linear-algebra
+problem: the matrix (its size, its entries, its structure: sparse,
+symmetric, positive definite, low rank), the unknowns, and what you need
+to do with the matrix. Explain why this structure suggests your methods.
+\emph{Interim report 1}: this section is the core of the memo.}
+
+Number every displayed formula you refer to, and refer to it by number,
+as in~\eqref{eq:ls} below. Use \verb|\begin{equation}| or
+\verb|\begin{align}|, never \verb|$$ ... $$|. For example, the least
+squares problem with a matrix $A\in\bR^{m\times n}$ of full column rank
+and its solution via the thin QR factorization $A=QR$ read
+\begin{equation}\label{eq:ls}
+  \min_{\bx\in\bR^n}\|A\bx-\bb\|_2,
+  \qquad
+  R\bx = Q^{\top}\bb .
+\end{equation}
+
+\begin{definition}\label{def:cond}
+The condition number of a matrix $A$ of full column rank is
+$\cond(A)=\sigma_{\max}(A)/\sigma_{\min}(A)$.
+\end{definition}
+
+\begin{remark}
+Since $\cond(A^{\top}A)=\cond(A)^2$, solving~\eqref{eq:ls} through the
+normal equations can lose twice as many digits as solving it through QR.
+\end{remark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Methods}
+\label{sec:methods}
+
+\guide{Criteria B and C. At most two algorithms. For each: the key idea,
+explained in your own words; the central claims, proved or sketched
+(say which, and cite the source of any proof you do not give); the cost
+in flops and memory, as a function of the problem size; and the
+conditions under which it fails or becomes slow.
+\emph{Interim report 1}: the candidate approaches, their pros and cons,
+and their predicted cost.}
+
+\subsection{Algorithm 1}
+
+Present an algorithm either as pseudocode, as in
+Algorithm~\ref{alg:power}, or as a short code listing, as in
+Listing~\ref{lst:power}. Annotate the expensive steps with their cost.
+
+\begin{algorithm}[ht]
+  \caption{Power iteration for the dominant eigenpair}\label{alg:power}
+  \KwIn{$A\in\bR^{n\times n}$, starting vector $\bx_0\neq 0$,
+        tolerance $\varepsilon>0$}
+  \KwOut{approximate dominant eigenpair $(\lambda,\bx)$}
+  $\bx\gets\bx_0/\|\bx_0\|$;\quad $\by\gets A\bx$;\quad
+  $\lambda\gets\bx^{\top}\by$\;
+  \While{$\|\by-\lambda\bx\|>\varepsilon\,|\lambda|$}{
+    $\bx\gets\by/\|\by\|$\;
+    $\by\gets A\bx$\tcp*{one matrix-vector product: $\sim 2\nnz(A)$ flops}
+    $\lambda\gets\bx^{\top}\by$\tcp*{Rayleigh quotient: $2n$ flops}
+  }
+  \Return{$\lambda$, $\bx$}
+\end{algorithm}
+
+\medskip\noindent\textbf{Cost.} About $2\nnz(A)$ flops per iteration and $O(n)$
+memory besides $A$. The error decreases like $|\lambda_2/\lambda_1|^k$,
+so the iteration is slow when the two largest eigenvalues are close in
+absolute value.
+
+\begin{lstlisting}[caption={Power iteration in NumPy.},label={lst:power}]
+import numpy as np
+
+def power_iteration(A, x0, tol=1e-10, maxit=1000):
+    x = x0 / np.linalg.norm(x0)
+    y = A @ x                     # the only expensive step
+    lam = x @ y
+    for _ in range(maxit):
+        if np.linalg.norm(y - lam * x) <= tol * abs(lam):
+            break
+        x = y / np.linalg.norm(y)
+        y = A @ x
+        lam = x @ y
+    return lam, x
+\end{lstlisting}
+
+\subsection{Algorithm 2}
+
+The second algorithm, if you compare two.
+
+\subsection{Cost and failure modes}
+
+\guide{Compare the two algorithms side by side: cost per step, number of
+steps, memory, sensitivity to conditioning, and the regime (size,
+sparsity, rank) in which each one wins. Section~\ref{sec:experiments}
+then checks these predictions.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation and experiments}
+\label{sec:experiments}
+
+\guide{Criterion D. What you implemented yourselves, and what you called
+from a library. The data, the benchmark and the metrics. Then the
+results: accuracy, the condition numbers of the matrices you actually
+factor, runtime against problem size next to the predicted cost, and the
+size or condition number at which a method stops working.
+\emph{Interim report 2}: a first implementation running on small data
+and one comparison with a library routine, with one figure.}
+
+\subsection{Setup}
+
+Describe the hardware and the software versions briefly, so that a
+reader can judge the timings. Every figure and table must be
+reproducible from the \texttt{README} of your repository.
+
+\subsection{Results}
+
+Figure~\ref{fig:example} shows how to include a figure, and
+Table~\ref{tab:example} how to report a comparison. Save plots from
+Python as vector PDF, with \texttt{plt.savefig("fig.pdf")} rather than
+as PNG. Label both axes, with units, and use a logarithmic axis when
+values span several orders of magnitude.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.45\linewidth}
+    \includegraphics[width=\linewidth]{example-image-a}
+    \caption{Runtime against $n$.}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.45\linewidth}
+    \includegraphics[width=\linewidth]{example-image-b}
+    \caption{Relative error against $\cond(A)$.}
+  \end{subfigure}
+  \caption{A figure with two panels. The caption says what the reader
+    should see, not only what is plotted.}
+  \label{fig:example}
+\end{figure}
+
+\begin{table}[ht]
+  \centering
+  \caption{Comparison of methods. Report the mean and the spread over
+    several runs, and say how many runs.}
+  \label{tab:example}
+  \begin{tabular}{lrrr}
+    \toprule
+    Method & $n$ & Time (s) & Relative error \\
+    \midrule
+    Algorithm 1 (ours)      & \dots & \dots & \dots \\
+    Algorithm 2 (ours)      & \dots & \dots & \dots \\
+    Library routine         & \dots & \dots & \dots \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discussion and limitations}
+\label{sec:discussion}
+
+\guide{Criteria C and D. Did the experiments confirm the predicted cost
+and failure modes? Explain every surprise. What did not work, and why?
+An honest explanation of a failure earns credit; a clean result with no
+explanation does not.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}
+\label{sec:conclusion}
+
+\guide{What you achieved, the main difficulties, and what you would do
+next. Half a page is enough.}
+
+\ifnum\stage<3
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Plan and division of work}
+\label{sec:plan}
+
+\guide{Interim reports only; this section disappears from the final
+report. \emph{Interim report 1}: the planned steps and who does what.
+\emph{Interim report 2}: what is not working yet, any change of plan,
+and the outline of the final report.}
+\fi
+
+\bodyend
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  References (not counted)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Cite only sources you have actually read. Give a DOI or a link where
+% one exists. Cite the datasets and the main software you used.
+\begin{thebibliography}{9}
+
+\bibitem{Strang}
+G.~Strang,
+\emph{Linear Algebra and Learning from Data},
+Wellesley--Cambridge Press, Wellesley, MA, 2019.
+
+\bibitem{GolubVanLoan}
+G.~H.~Golub and C.~F.~Van Loan,
+\emph{Matrix Computations}, 4th ed.,
+Johns Hopkins University Press, Baltimore, MD, 2013.
+
+\bibitem{MovieLens}
+F.~M.~Harper and J.~A.~Konstan,
+The MovieLens datasets: history and context,
+\emph{ACM Transactions on Interactive Intelligent Systems} \textbf{5}(4),
+article 19, 2015.
+\href{https://doi.org/10.1145/2827872}{doi:10.1145/2827872}.
+
+\bibitem{NumPy}
+C.~R.~Harris et al.,
+Array programming with NumPy,
+\emph{Nature} \textbf{585}, 357--362, 2020.
+\href{https://doi.org/10.1038/s41586-020-2649-2}{doi:10.1038/s41586-020-2649-2}.
+
+\end{thebibliography}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Appendices (not counted)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifnum\stage=3
+\appendix
+
+\section{Contribution statement}
+
+\guide{Required. Who did what, agreed by all members. Staff may adjust
+an individual grade if contributions are clearly unequal.}
+
+\noindent
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+  \toprule
+  Member & Contribution \\
+  \midrule
+  A.~A.~Lovelace & \dots \\
+  C.~Babbage     & \dots \\
+  \bottomrule
+\end{tabularx}
+
+\section{AI-use statement}
+
+\guide{Required. Which AI tools you used and for what: code, language
+editing, finding literature. Every member must be able to explain every
+equation and every line of the core code. If you used none, say so.}
+
+\section{Additional results}
+
+\guide{Optional. Proofs, extra figures and tables that support the main
+text. Reviewers are not required to read the appendices, so everything
+needed to follow the report belongs in the main body.}
+\fi
+
+\end{document}

@@ -1,0 +1,4 @@
+sources/*.pdf
+sources/*.zip
+
+AGENTS.override.md
