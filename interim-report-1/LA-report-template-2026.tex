@@ -78,7 +78,7 @@
 \newcommand{\carddomain}{Computer vision and navigation}
 \newcommand{\cardmethod}{SVD and low-rank approximation}
 \newcommand{\cardobject}{The $N\times 9$ matrix $A$ from $N\ge 8$ point
-  matches; the essential matrix $E$ as its smallest right singular vector,
+  matches; the essential matrix $E$ reshaped from its null vector estimate,
   projected to singular values $(s,s,0)$}
 \newcommand{\cardalgorithms}{Eight-point algorithm with and without Hartley
   normalisation; the same inside RANSAC (own implementations, library SVD)}
@@ -276,11 +276,11 @@ where $[\mathbf{t}]_{\times}$ is the matrix of the cross product with $\mathbf{t
   \quad
   \mathbf{a}_i^{\top}=(x_2x_1,\,x_2y_1,\,x_2,\,y_2x_1,\,y_2y_1,\,y_2,\,x_1,\,y_1,\,1)_i .
 \end{equation}
-The central object is this dense, tall matrix with $N\ge 8$ (in practice hundreds of rows). Without noise $\rank A=8$ and $\mathbf{e}$ spans its null space. With noise we solve
+The central object is this dense matrix with $N\ge 8$ (in practice hundreds of rows). For nondegenerate, noiseless correspondences $\rank A=8$ and $\mathbf{e}$ spans its null space. With noise we solve
 \begin{equation}\label{eq:hls}
   \min_{\|\mathbf{e}\|_2=1}\|A\mathbf{e}\|_2,
 \end{equation}
-whose solution is the right singular vector $\mathbf{v}_9$ of the smallest singular value~\cite[App.~A5]{HartleyZisserman}. The task is therefore to find a singular vector of $A$, and then to project and factor $E$ into $R$ and $\mathbf{t}$. The problem is homogeneous (the right-hand side is zero), so we need the SVD and not QR. The entries of $A$ are products of coordinates of very different size, so $\cond(A)$ is large, and this is what motivates normalizing the points.
+SVD directly solves this constrained minimization: choose the last right singular vector $\mathbf{v}_9$~\cite[App.~A5]{HartleyZisserman}. For $N=8$, use the full $9\times9$ right-singular basis; a reduced SVD omits the null vector. Homogeneity does not rule out QR-based methods. Coordinate scaling can harm numerical accuracy, especially in pixels. However, for $N\ge9$ exact rank-eight data already gives $\cond_2(A)=\infty$. We must distinguish scaling of the nonzero spectrum from separation of the smallest singular direction.
 
 %%%%
 \section{Methods}
@@ -294,13 +294,17 @@ conditions under which it fails or becomes slow.
 \emph{Interim report 1}: the candidate approaches, their pros and cons,
 and their predicted cost.}
 
-All approaches share two steps after~\eqref{eq:hls}. First, the matrix $\hat E$ made from $\mathbf{v}_9$ is projected onto the essential matrices: if $\hat E=U\diag(\sigma_1,\sigma_2,\sigma_3)V^{\top}$, then $E=U\diag(s,s,0)V^{\top}$ with $s=\frac12(\sigma_1+\sigma_2)$ is the closest one in the Frobenius norm. Second, with $W=\bigl(\begin{smallmatrix}0&-1&0\\1&0&0\\0&0&1\end{smallmatrix}\bigr)$, $\mathbf{u}_3$ the last column of $U$ and $\det U=\det V=1$, we factor
+After solving~\eqref{eq:hls} and undoing any Hartley normalization, let $\hat E$ be the matrix estimate in calibrated camera coordinates. Project it onto the essential matrices: if $\hat E=U\diag(\sigma_1,\sigma_2,\sigma_3)V^{\top}$, then $E=U\diag(s,s,0)V^{\top}$ with $s=\frac12(\sigma_1+\sigma_2)$ is the closest one in the Frobenius norm. Then, with $W=\bigl(\begin{smallmatrix}0&-1&0\\1&0&0\\0&0&1\end{smallmatrix}\bigr)$, $\mathbf{u}_3$ the last column of $U$ and $\det U=\det V=1$, we factor
 \begin{equation}\label{eq:decomp}
   (R,\mathbf{t})\in\bigl\{UWV^{\top},\;UW^{\top}V^{\top}\bigr\}\times\{\mathbf{u}_3,-\mathbf{u}_3\}.
 \end{equation}
 Of these four candidates we keep the one for which the triangulated points (again an SVD problem) are in front of both cameras.
 
-We consider three approaches from the literature, summarised in Table~\ref{tab:approaches}. The SVD of an $N\times n$ matrix with $N\ge n$ costs $O(Nn^2)$ flops, which is $O(N)$ for our $n=9$ columns. The plain eight-point algorithm solves~\eqref{eq:hls} directly~\cite{Hartley97}. The normalized eight-point algorithm first translates the points of each frame to centroid zero and scales them to mean distance $\sqrt2$ with maps $T_1,T_2$, solves for $\hat E$, and returns $E=T_2^{\top}\hat E\,T_1$, which improves the conditioning of $A$ a lot~\cite{Hartley97}. RANSAC repeats the following $K$ times: take $8$ random matches, compute $E$ as above, and count the matches with a small error $|\bx_2^{\top}E\bx_1|$. It keeps the largest set of such inliers and recomputes $E$ from it~\cite{HartleyZisserman,ScaramuzzaII}. For inlier ratio $w$ and confidence $p$ one needs $K=\ln(1-p)/\ln(1-w^8)$, which is about $1200$ for $w=0.5$, $p=0.99$. Here $K$ depends on $w$ and not on $N$, and each iteration costs $O(N)$ for counting inliers plus a constant $c_8$ for the SVD of an $8\times 9$ matrix. If the ratio $\sigma_9/\sigma_8$ is close to $1$ (points on one plane, small baseline), the solution of~\eqref{eq:hls} is not unique and we mark the frame pair as unreliable. The same matrix $A$ built from pixel coordinates gives the fundamental matrix, where normalization changes $\cond(A)$ the most, so we run the normalization experiment in pixel coordinates too.
+Table~\ref{tab:approaches} compares three variants. The SVD of an $N\times n$ matrix with $N\ge n$ costs $O(Nn^2)$ flops, hence $O(N)$ for $n=9$. The plain eight-point algorithm solves~\eqref{eq:hls} directly~\cite{Hartley97}. Hartley normalization translates each frame's points to centroid zero and scales their mean distance to $\sqrt2$, using $T_1,T_2$. Solve for a matrix $M$ in these coordinates, undo the transforms as $\hat E=T_2^{\top}MT_1$, then enforce the essential constraint above. The transformed matrix $M$ need not have equal nonzero singular values. For the pixel-coordinate experiment, instead estimate a rank-two fundamental matrix $F$ (without requiring equal singular values), denormalize it, and form $\hat E=K_2^{\top}FK_1$ using the camera calibration matrices before essential projection.
+
+RANSAC takes 8 random matches, estimates $E$, counts inliers using a residual threshold, and refits on the largest inlier set~\cite{HartleyZisserman,ScaramuzzaII}. The residual and threshold remain to be agreed; raw $|\bx_2^{\top}E\bx_1|$ depends on the scale of $E$. For inlier ratio $w$ and confidence $p$, $K=\lceil\ln(1-p)/\ln(1-w^8)\rceil$, about 1200 for $w=0.5$, $p=0.99$. Each iteration costs $O(N)$ for scoring plus constant $c_8$ for the $8\times9$ solve.
+
+For $N\ge9$, a small gap between $\sigma_8$ and $\sigma_9$ indicates sensitivity of the last singular direction, not nonuniqueness unless they are equal (apart from sign). Exact planar degeneracy can give $\sigma_8=\sigma_9=0$, so their ratio is undefined. We will test planar scenes and small baselines to assess these diagnostics; no universal detection threshold is assumed.
 
 \begin{table}[ht]
   \centering
@@ -310,8 +314,8 @@ We consider three approaches from the literature, summarised in Table~\ref{tab:a
     \toprule
     Approach & Flops & Memory & Likely problems \\
     \midrule
-    Plain 8-point      & $O(Nn^2)$, $n=9$ & $O(N)$ & large $\cond(A)$; noise; wrong matches \\
-    Normalized 8-point & $O(Nn^2)+O(N)$ & $O(N)$ & wrong matches; planar points or small baseline, where $\sigma_9/\sigma_8\to 1$ \\
+    Plain 8-point      & $O(Nn^2)$, $n=9$ & $O(N)$ & poor coordinate scaling; noise; wrong matches \\
+    Normalized 8-point & $O(Nn^2)+O(N)$ & $O(N)$ & wrong matches; planar degeneracy; small baseline \\
     RANSAC + normalized & $K\,(c_8+O(N))$ & $O(N)$ & $K$ grows like $w^{-8}$ for few inliers; random result \\
     \bottomrule
   \end{tabularx}
@@ -404,7 +408,12 @@ report. \emph{Interim report 1}: the planned steps and who does what.
 \emph{Interim report 2}: what is not working yet, any change of plan,
 and the outline of the final report.}
 
-We pursue all three approaches, because comparing them shows what normalization and RANSAC each add. We implement ourselves the matrix $A$, the normalization, the projection and factorization, the triangulation test, the RANSAC loop and the error measures. We call only a library SVD, and for feature detection and matching we write a module with a common interface, so that classical features and matchers and neural-network ones can be plugged into the same pipeline and tested in it. Until 30 Nov (interim report 2) we will build the initial pipeline for feature detection and matching (including the check of the UZH-FPV camera model and undistortion of the images if it is a fisheye), a synthetic data generator with known $(R,\mathbf{t})$ and noise, the metrics $e_R$, $e_t$, running time and $\cond(A)$, and only the basic variant of the algorithm, the plain eight-point algorithm. Until 21 Dec (final report) we will add the normalization and our RANSAC and run all experiments, which are the plots of the errors $e_R$ and $e_t$ against the noise level added to synthetic points for all three variants, the runs on the UZH-FPV Easy and Hard sequences against the ground truth with the different features and matchers, and the comparison of timings with the predicted cost, and we will write the report. The work splits into data loading and the pipeline, the features and matchers module, synthetic data, the metrics, the eight-point algorithms with normalization and factorization, RANSAC, the experiments, and the report. Who does which step is not decided at this moment.
+We compare plain and normalized eight-point estimation, adding RANSAC to test outlier rejection. We implement $A$, normalization, essential projection and decomposition, triangulation, RANSAC and the error metrics, using a library SVD. OpenCV's five-point estimator is the independent baseline, evaluated on the same matches with the same pose-error metrics. A common feature interface will support classical and neural-network detectors and matchers.
+
+Until 30 Nov (interim report 2), we plan camera-model checks and fisheye undistortion if needed, the feature pipeline, synthetic data with known poses and noise, the metrics and plain eight-point estimation. Until 21 Dec (final report), we plan normalization, RANSAC, the library comparison, synthetic noise sweeps including planar scenes and small baselines, UZH-FPV Easy/Hard runs with different matchers, runtime scaling, and the report. Work packages are data/pipeline, features, synthetic data/metrics, eight-point estimation, RANSAC, experiments and writing; owners are not yet decided.
+
+AI assistance: Codex helped review and correct mathematics, references and wording.
+
 \fi
 
 \bodyend
@@ -421,23 +430,27 @@ R.~I.~Hartley,
 In defense of the eight-point algorithm,
 \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence}
 \textbf{19}(6), 580--593, 1997.
+\url{https://www.cs.ucf.edu/courses/cap6938-02/refs/hartley.pdf}.
 
 \bibitem{HartleyZisserman}
 R.~Hartley and A.~Zisserman,
 \emph{Multiple View Geometry in Computer Vision}, 2nd ed.,
 Cambridge University Press, 2004.
+\url{https://www.robots.ox.ac.uk/~vgg/hzbook/}.
 
 \bibitem{ScaramuzzaI}
 D.~Scaramuzza and F.~Fraundorfer,
 Visual odometry [Tutorial],
 \emph{IEEE Robotics \& Automation Magazine}
 \textbf{18}(4), 80--92, 2011.
+\url{https://doi.org/10.1109/MRA.2011.943233}.
 
 \bibitem{ScaramuzzaII}
 F.~Fraundorfer and D.~Scaramuzza,
 Visual odometry: Part II: Matching, robustness, optimization, and applications,
 \emph{IEEE Robotics \& Automation Magazine}
 \textbf{19}(2), 78--90, 2012.
+\url{https://doi.org/10.1109/MRA.2012.2182810}.
 
 \bibitem{UZHFPV}
 J.~Delmerico, T.~Cieslewski, H.~Rebecq, M.~Faessler and D.~Scaramuzza,
