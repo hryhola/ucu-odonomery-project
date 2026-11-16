@@ -2,7 +2,9 @@
 
 [Moodle assignment](https://learn.ucu.edu.ua/mod/assign/view.php?id=77321)
 
-**Deadline:** 14 December 2026, 23:59 Kyiv time.
+**Deadline:** 21 December 2026, 23:59 Kyiv time.
+
+**Verified on Moodle:** 16 November 2026; both the due-date field and assignment description agree.
 
 Please submit the PDF of your report and the presentation file.
 

@@ -103,13 +103,15 @@ LLMs are full of matrices, but they make poor linear-algebra projects:
 
 ### Timeline
 
+Dates for the three report submissions below were verified against their dedicated Moodle assignment pages on 16 November 2026. Older dates remain in some course descriptions; use the linked assignment pages for the current deadlines.
+
 | Date | Milestone |
 | --- | --- |
 | Mon 19 Oct | **Team and topic registration** on Moodle |
 | Thu 22 Oct | Topic approved, or returned with a suggested reframing |
-| Mon 2 Nov | **Interim report 1**: scoping memo |
-| Mon 16 Nov | **Interim report 2**: working baseline |
-| Mon 14 Dec | **Final submission**: report, code, recording, statements |
+| Mon 9 Nov | **Interim report 1**: scoping memo |
+| Mon 30 Nov | **Interim report 2**: working baseline |
+| Mon 21 Dec | **Final submission**: report, code, recording, statements |
 | 11–24 Jan | **Peer review** in Moodle Workshop |
 | by 29 Jan | Staff grades; short online Q&A where needed |
 
@@ -130,7 +132,9 @@ All deadlines are 23:59 Kyiv time.
 - the chosen method(s), the plan, and who does what;
 - 3–5 references you have actually read.
 
-**Interim report 2: working baseline, 2 pages plus a link to the code.**
+**Interim report 2: working baseline.**
+
+The [dedicated assignment page](second-interim-report.md), checked on 16 November 2026, requires **4–5 pages** and still leaves detailed contents as [TBA]. The older overview/template says two pages plus a code link; its suggested contents are retained below for context.
 
 - a first implementation running on small data;
 - a first comparison with a library routine, with one figure;
@@ -341,7 +345,7 @@ Please provide:
 ## Assignment pages
 
 - [First interim report](first-interim-report.md) (9 November 2026, 23:59)
-- [Second interim report](second-interim-report.md) (16 November 2026, 23:59)
-- [Final report submission](final-report-submission.md) (14 December 2026, 23:59)
+- [Second interim report](second-interim-report.md) (30 November 2026, 23:59)
+- [Final report submission](final-report-submission.md) (21 December 2026, 23:59)
 - [Peer evaluation of the LA projects](peer-evaluation.md) (11 January 2027, 23:59)
 - [Evaluation of the peer review quality](evaluation-of-the-peer-review.md) (30 January 2027, 00:00)
