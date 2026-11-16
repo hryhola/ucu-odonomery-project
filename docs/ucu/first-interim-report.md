@@ -4,6 +4,8 @@
 
 **Deadline:** 9 November 2026, 23:59 Kyiv time.
 
+**Verified on Moodle:** 16 November 2026. The description below still mentions older dates for later milestones. Their dedicated assignment pages now give [interim report 2](second-interim-report.md) as 30 November and the [final submission](final-report-submission.md) as 21 December, both at 23:59 Kyiv time.
+
 ## Interim report 1: scoping memo
 
 **Worth:** 2 points.
