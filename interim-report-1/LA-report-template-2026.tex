@@ -1,0 +1,484 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Linear Algebra -- course project report template, Autumn 2026
+%% Ukrainian Catholic University, Faculty of Applied Sciences,
+%% Data Science Master Programme
+%%
+%% The title page is adapted from a template by WikiBooks, distributed
+%% by LaTeXTemplates.com under CC BY-NC-SA 3.0.
+%%
+%% HOW TO USE THIS TEMPLATE
+%%   1. Fill in the block marked "FILL IN" below: the stage of the report,
+%%      the title, the authors, the project card and the links.
+%%   2. One file serves all three milestones. Keep working in the same
+%%      file: interim report 1 grows into interim report 2, and that grows
+%%      into the final report.
+%%   3. Replace the grey guidance boxes with your own text. Before you
+%%      submit, set \showguidefalse so that any box you forgot disappears.
+%%   4. Do NOT change the font size, the paper size or the margins.
+%%      Page limits are counted in this format.
+%%   5. Compile with pdfLaTeX (the Overleaf default). The folder must
+%%      contain UCU-Apps.png (the logo); the example figure uses an image
+%%      shipped with every TeX distribution.
+%%
+%% PAGE LIMITS (counted automatically; see the end of the log file)
+%%   Interim reports 1 and 2: 2 pages, project card included.
+%%   Final report: at most 10 pages from the abstract to the end of the
+%%   Conclusion, figures and tables included. The title page, the
+%%   references and the appendices are not counted.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[11pt,a4paper]{article}
+
+%----------------------------------------------------------------------
+%  Page layout: do not change
+%----------------------------------------------------------------------
+\usepackage[a4paper,left=20mm,right=20mm,top=20mm,bottom=25mm,
+            headheight=14pt,marginparwidth=16mm]{geometry}
+
+%----------------------------------------------------------------------
+%  Packages
+%----------------------------------------------------------------------
+\usepackage[english]{babel}
+% T1 encoding only together with the scalable Latin Modern fonts
+% (standard on Overleaf); otherwise fall back to the default encoding.
+\IfFileExists{lmodern.sty}{\usepackage[T1]{fontenc}\usepackage{lmodern}}{}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx}
+\usepackage{caption,subcaption}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{fancyhdr}
+\usepackage{refcount}
+\usepackage{listings}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+% Margin notes are useful while drafting. Add the option "disable"
+% before you submit, or simply delete your \todo{} commands.
+\usepackage[colorinlistoftodos,textsize=scriptsize]{todonotes}
+\usepackage[colorlinks=true,linkcolor=MidnightBlue,citecolor=MidnightBlue,
+            urlcolor=MidnightBlue]{hyperref}   % load hyperref last
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  FILL IN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Stage of the report: 1 = interim report 1 (scoping memo),
+%                      2 = interim report 2 (working baseline),
+%                      3 = final report
+\newcommand{\stage}{1}
+
+\newcommand{\reporttitle}{Visual odometry for drone navigation}
+\newcommand{\shorttitle}{Visual odometry for drone navigation}
+\newcommand{\reportauthors}{Bohdan \textsc{Prokhorov}\\
+  Markiian \textsc{Yatsyshyn}\\
+  Vladyslav \textsc{Hryhola}}
+
+% Project card: one line each. Keep it consistent with your registration;
+% if something has changed, update it here and say so in the report.
+\newcommand{\carddomain}{Computer vision and navigation}
+\newcommand{\cardmethod}{SVD and low-rank approximation}
+\newcommand{\cardobject}{The $N\times 9$ matrix $A$ from $N\ge 8$ point
+  matches; the essential matrix $E$ as its smallest right singular vector,
+  projected to singular values $(s,s,0)$}
+\newcommand{\cardalgorithms}{Eight-point algorithm with and without Hartley
+  normalisation; the same inside RANSAC (own implementations, library SVD)}
+\newcommand{\carddata}{UZH-FPV Drone Racing Dataset~\cite{UZHFPV}, monocular image sequences}
+\newcommand{\cardcode}{\url{https://github.com/your-team/your-repo}}
+\newcommand{\cardvideo}{\url{https://link-to-your-recording}} % final only
+
+% Guidance boxes: set \showguidefalse before you submit.
+\newif\ifshowguide
+\showguidefalse
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Template machinery: no need to read further than the next block
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Notation used in the course. Add your own macros here.
+\newcommand{\bR}{\mathbb{R}}
+\newcommand{\bC}{\mathbb{C}}
+\newcommand{\ba}{\mathbf{a}}
+\newcommand{\bb}{\mathbf{b}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bz}{\mathbf{z}}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\cond}{cond}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\trace}{trace}
+\DeclareMathOperator{\nnz}{nnz}
+\DeclareMathOperator*{\argmin}{argmin}
+
+% Theorem-like environments, numbered within sections
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Code listings
+\lstset{language=Python, basicstyle=\ttfamily\small, columns=fullflexible,
+  keepspaces=true, frame=lines, numbers=left, numberstyle=\tiny\color{gray},
+  commentstyle=\color{gray}, keywordstyle=\color{MidnightBlue}\bfseries,
+  showstringspaces=false, breaklines=true}
+
+% Guidance boxes
+\newcommand{\guide}[1]{\ifshowguide\par\smallskip\noindent
+  \colorbox{gray!12}{\parbox{\dimexpr\linewidth-2\fboxsep}{\small\itshape
+  \textbf{Guidance.} #1}}\par\smallskip\fi}
+
+% Stage names
+\newcommand{\stagename}{\ifcase\stage\or Interim report 1: scoping memo\or
+  Interim report 2: working baseline\or Final report\fi}
+
+% Running heads
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\shorttitle}
+\fancyhead[R]{\small\stagename}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Project card
+\newcommand{\projectcard}{%
+  \noindent
+  \begin{tabularx}{\linewidth}{@{}>{\raggedright\bfseries}p{3.0cm}
+                                  >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    Domain        & \carddomain \\
+    Method family & \cardmethod \\
+    LA object     & \cardobject \\
+    Algorithms    & \cardalgorithms \\
+    Data          & \carddata \\
+    \ifnum\stage>1 Code & \cardcode \\ \fi
+    \ifnum\stage=3 Recording & \cardvideo \\ \fi
+    \bottomrule
+  \end{tabularx}\par}
+
+% Page counting: the main body runs from \bodystart to \bodyend
+\newcommand{\pagelimit}{\ifnum\stage=3 10\else 2\fi}
+\newcommand{\bodystart}{\label{body-start}}
+\newcommand{\bodyend}{\label{body-end}}
+\AtEndDocument{%
+  \refused{body-start}\refused{body-end}%
+  \edef\bodypages{\number\numexpr\getpagerefnumber{body-end}
+    -\getpagerefnumber{body-start}+1\relax}%
+  \typeout{}%
+  \typeout{*** Main body: \bodypages\space page(s); limit \pagelimit.}%
+  \typeout{}%
+  \ifnum\bodypages>\pagelimit\relax
+    \PackageWarningNoLine{LA-template}{Main body has \bodypages\space pages,
+      above the limit of \pagelimit}%
+  \fi}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ifnum\stage=3
+%----------------------------------------------------------------------
+%  Final report: title page (not counted)
+%----------------------------------------------------------------------
+\begin{titlepage}
+  \centering
+  {\large\scshape Ukrainian Catholic University\par}
+  {\scshape Faculty of Applied Sciences\quad$\cdot$\quad
+    Data Science Master Programme\par}
+  \vspace{1.6cm}
+  \rule{\linewidth}{0.5mm}\par\vspace{0.4cm}
+  {\LARGE\bfseries \reporttitle\par}
+  \vspace{0.3cm}
+  {\large Linear Algebra: course project, final report\par}
+  \vspace{0.2cm}
+  \rule{\linewidth}{0.5mm}\par
+  \vspace{1.2cm}
+  {\large\emph{Authors:}\par\smallskip \reportauthors\par}
+  \vspace{1.2cm}
+  \projectcard
+  \vfill
+    \IfFileExists{UCU-Apps.png}{\includegraphics[height=4cm]{UCU-Apps.png}\par}{}
+  \vspace{0.2cm}
+  {\large \today\par}
+\end{titlepage}
+
+%----------------------------------------------------------------------
+%  Abstract: opens the first page of the main body
+%----------------------------------------------------------------------
+\bodystart
+\begin{abstract}
+\guide{Five to eight sentences: the problem, the linear-algebra object,
+the methods you compared, the main quantitative result, and the main
+limitation. Write it last.}
+We compare two algorithms for completing a partially observed ratings
+matrix by a matrix of low rank~\cite[Sec.~III.5]{Strang}.
+\end{abstract}
+
+\else
+%----------------------------------------------------------------------
+%  Interim reports: compact header and project card (counted)
+%----------------------------------------------------------------------
+\bodystart
+\begin{center}
+  {\Large\bfseries \reporttitle\par}
+  \medskip
+  {\large \stagename\par}
+  \smallskip
+  \begin{tabular}{c}\reportauthors\end{tabular}\par
+  \smallskip
+  {\small Linear Algebra, UCU Data Science Master Programme, \today\par}
+\end{center}
+\projectcard
+\medskip
+\fi
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Problem and aim}
+\label{sec:problem}
+
+\guide{Criterion A. What goes in, what comes out, and why it matters in
+practice. Who uses a solution to this problem, and what goes wrong
+without a good one? Give a short overview of the approaches in the
+literature and say which ones you chose and why.
+\emph{Interim report 1}: half a page.}
+
+The input is a video from an FPV racing drone with known camera calibration, with features matched between consecutive frames, which gives $N$ point correspondences per frame pair. The output is the relative rotation $R$ and the direction of the translation $\mathbf{t}$ for each pair, chained into the camera trajectory. Such camera-based motion estimation lets drones, robots and cars navigate where GPS is unavailable or unreliable~\cite{ScaramuzzaI}. Racing drones are a hard case, because fast motion blurs the images and produces many wrong matches~\cite{UZHFPV}, and small errors accumulate into drift. With one camera the scale of $\mathbf{t}$ is unknown.
+
+For every frame pair we measure the rotation error $e_R=\arccos\frac{\trace(R^{\top}R^{*})-1}{2}$ and the translation-direction error $e_t=\angle(\mathbf{t},\mathbf{t}^{*})$ against the truth $(R^{*},\mathbf{t}^{*})$, and the running time. The project is successful if (i) on synthetic data with $1$ pixel noise the normalized eight-point algorithm gives $e_R<1^{\circ}$ and $e_t<5^{\circ}$, and (ii) on the UZH-FPV sequences (one Easy and one Hard, with public ground truth) Hartley normalization lowers the median errors compared with the plain algorithm, and our RANSAC lowers the $90$th percentile errors further.
+
+%%%%
+\section{Linear-algebra formulation}
+\label{sec:formulation}
+
+\guide{Criterion A. State the problem precisely as a linear-algebra
+problem: the matrix (its size, its entries, its structure: sparse,
+symmetric, positive definite, low rank), the unknowns, and what you need
+to do with the matrix. Explain why this structure suggests your methods.
+\emph{Interim report 1}: this section is the core of the memo.}
+
+A 3D point seen in two frames gives calibrated image points $\bx_1,\bx_2\in\bR^3$ (homogeneous coordinates), which satisfy the epipolar constraint
+\begin{equation}\label{eq:epi}
+  \bx_2^{\top}E\,\bx_1=0,
+  \qquad
+  E=[\mathbf{t}]_{\times}R,
+\end{equation}
+where $[\mathbf{t}]_{\times}$ is the matrix of the cross product with $\mathbf{t}$. The essential matrix $E$ has singular values $(s,s,0)$ with $s=\|\mathbf{t}\|$~\cite[Ch.~9]{HartleyZisserman}, and it is defined only up to scale, so we take $\|\mathbf{t}\|=1$. Equation~\eqref{eq:epi} is linear in the nine entries $\mathbf{e}\in\bR^9$ of $E$, so $N$ matches give
+\begin{equation}\label{eq:Ae}
+  A\mathbf{e}=0,
+  \qquad
+  A\in\bR^{N\times 9},
+  \quad
+  \mathbf{a}_i^{\top}=(x_2x_1,\,x_2y_1,\,x_2,\,y_2x_1,\,y_2y_1,\,y_2,\,x_1,\,y_1,\,1)_i .
+\end{equation}
+The central object is this dense, tall matrix with $N\ge 8$ (in practice hundreds of rows). Without noise $\rank A=8$ and $\mathbf{e}$ spans its null space. With noise we solve
+\begin{equation}\label{eq:hls}
+  \min_{\|\mathbf{e}\|_2=1}\|A\mathbf{e}\|_2,
+\end{equation}
+whose solution is the right singular vector $\mathbf{v}_9$ of the smallest singular value~\cite[App.~A5]{HartleyZisserman}. The task is therefore to find a singular vector of $A$, and then to project and factor $E$ into $R$ and $\mathbf{t}$. The problem is homogeneous (the right-hand side is zero), so we need the SVD and not QR. The entries of $A$ are products of coordinates of very different size, so $\cond(A)$ is large, and this is what motivates normalizing the points.
+
+%%%%
+\section{Methods}
+\label{sec:methods}
+
+\guide{Criteria B and C. At most two algorithms. For each: the key idea,
+explained in your own words; the central claims, proved or sketched
+(say which, and cite the source of any proof you do not give); the cost
+in flops and memory, as a function of the problem size; and the
+conditions under which it fails or becomes slow.
+\emph{Interim report 1}: the candidate approaches, their pros and cons,
+and their predicted cost.}
+
+All approaches share two steps after~\eqref{eq:hls}. First, the matrix $\hat E$ made from $\mathbf{v}_9$ is projected onto the essential matrices: if $\hat E=U\diag(\sigma_1,\sigma_2,\sigma_3)V^{\top}$, then $E=U\diag(s,s,0)V^{\top}$ with $s=\frac12(\sigma_1+\sigma_2)$ is the closest one in the Frobenius norm. Second, with $W=\bigl(\begin{smallmatrix}0&-1&0\\1&0&0\\0&0&1\end{smallmatrix}\bigr)$, $\mathbf{u}_3$ the last column of $U$ and $\det U=\det V=1$, we factor
+\begin{equation}\label{eq:decomp}
+  (R,\mathbf{t})\in\bigl\{UWV^{\top},\;UW^{\top}V^{\top}\bigr\}\times\{\mathbf{u}_3,-\mathbf{u}_3\}.
+\end{equation}
+Of these four candidates we keep the one for which the triangulated points (again an SVD problem) are in front of both cameras.
+
+We consider three approaches from the literature, summarised in Table~\ref{tab:approaches}. The SVD of an $N\times n$ matrix with $N\ge n$ costs $O(Nn^2)$ flops, which is $O(N)$ for our $n=9$ columns. The plain eight-point algorithm solves~\eqref{eq:hls} directly~\cite{Hartley97}. The normalized eight-point algorithm first translates the points of each frame to centroid zero and scales them to mean distance $\sqrt2$ with maps $T_1,T_2$, solves for $\hat E$, and returns $E=T_2^{\top}\hat E\,T_1$, which improves the conditioning of $A$ a lot~\cite{Hartley97}. RANSAC repeats the following $K$ times: take $8$ random matches, compute $E$ as above, and count the matches with a small error $|\bx_2^{\top}E\bx_1|$. It keeps the largest set of such inliers and recomputes $E$ from it~\cite{HartleyZisserman,ScaramuzzaII}. For inlier ratio $w$ and confidence $p$ one needs $K=\ln(1-p)/\ln(1-w^8)$, which is about $1200$ for $w=0.5$, $p=0.99$. Here $K$ depends on $w$ and not on $N$, and each iteration costs $O(N)$ for counting inliers plus a constant $c_8$ for the SVD of an $8\times 9$ matrix. If the ratio $\sigma_9/\sigma_8$ is close to $1$ (points on one plane, small baseline), the solution of~\eqref{eq:hls} is not unique and we mark the frame pair as unreliable. The same matrix $A$ built from pixel coordinates gives the fundamental matrix, where normalization changes $\cond(A)$ the most, so we run the normalization experiment in pixel coordinates too.
+
+\begin{table}[ht]
+  \centering
+  \caption{Approaches, predicted cost for $N$ matches, and what is likely to go wrong.}
+  \label{tab:approaches}
+  \begin{tabularx}{\linewidth}{@{}lllX@{}}
+    \toprule
+    Approach & Flops & Memory & Likely problems \\
+    \midrule
+    Plain 8-point      & $O(Nn^2)$, $n=9$ & $O(N)$ & large $\cond(A)$; noise; wrong matches \\
+    Normalized 8-point & $O(Nn^2)+O(N)$ & $O(N)$ & wrong matches; planar points or small baseline, where $\sigma_9/\sigma_8\to 1$ \\
+    RANSAC + normalized & $K\,(c_8+O(N))$ & $O(N)$ & $K$ grows like $w^{-8}$ for few inliers; random result \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\ifnum\stage>1
+\section{Implementation and experiments}
+\label{sec:experiments}
+
+\guide{Criterion D. What you implemented yourselves, and what you called
+from a library. The data, the benchmark and the metrics. Then the
+results: accuracy, the condition numbers of the matrices you actually
+factor, runtime against problem size next to the predicted cost, and the
+size or condition number at which a method stops working.
+\emph{Interim report 2}: a first implementation running on small data
+and one comparison with a library routine, with one figure.}
+
+\subsection{Setup}
+
+Describe the hardware and the software versions briefly, so that a
+reader can judge the timings. Every figure and table must be
+reproducible from the \texttt{README} of your repository.
+
+\subsection{Results}
+
+Figure~\ref{fig:example} shows how to include a figure, and
+Table~\ref{tab:example} how to report a comparison. Save plots from
+Python as vector PDF, with \texttt{plt.savefig("fig.pdf")} rather than
+as PNG. Label both axes, with units, and use a logarithmic axis when
+values span several orders of magnitude.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}{0.45\linewidth}
+    \includegraphics[width=\linewidth]{example-image-a}
+    \caption{Runtime against $n$.}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.45\linewidth}
+    \includegraphics[width=\linewidth]{example-image-b}
+    \caption{Relative error against $\cond(A)$.}
+  \end{subfigure}
+  \caption{A figure with two panels. The caption says what the reader
+    should see, not only what is plotted.}
+  \label{fig:example}
+\end{figure}
+
+\begin{table}[ht]
+  \centering
+  \caption{Comparison of methods. Report the mean and the spread over
+    several runs, and say how many runs.}
+  \label{tab:example}
+  \begin{tabular}{lrrr}
+    \toprule
+    Method & $n$ & Time (s) & Relative error \\
+    \midrule
+    Algorithm 1 (ours)      & \dots & \dots & \dots \\
+    Algorithm 2 (ours)      & \dots & \dots & \dots \\
+    Library routine         & \dots & \dots & \dots \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\fi
+\ifnum\stage=3
+\section{Discussion and limitations}
+\label{sec:discussion}
+
+\guide{Criteria C and D. Did the experiments confirm the predicted cost
+and failure modes? Explain every surprise. What did not work, and why?
+An honest explanation of a failure earns credit; a clean result with no
+explanation does not.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}
+\label{sec:conclusion}
+
+\guide{What you achieved, the main difficulties, and what you would do
+next. Half a page is enough.}
+
+\fi
+
+\ifnum\stage<3
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Chosen methods and plan}
+\label{sec:plan}
+
+\guide{Interim reports only; this section disappears from the final
+report. \emph{Interim report 1}: the planned steps and who does what.
+\emph{Interim report 2}: what is not working yet, any change of plan,
+and the outline of the final report.}
+
+We pursue all three approaches, because comparing them shows what normalization and RANSAC each add. We implement ourselves the matrix $A$, the normalization, the projection and factorization, the triangulation test, the RANSAC loop and the error measures. We call only a library SVD, and for feature detection and matching we write a module with a common interface, so that classical features and matchers and neural-network ones can be plugged into the same pipeline and tested in it. Until 30 Nov (interim report 2) we will build the initial pipeline for feature detection and matching (including the check of the UZH-FPV camera model and undistortion of the images if it is a fisheye), a synthetic data generator with known $(R,\mathbf{t})$ and noise, the metrics $e_R$, $e_t$, running time and $\cond(A)$, and only the basic variant of the algorithm, the plain eight-point algorithm. Until 21 Dec (final report) we will add the normalization and our RANSAC and run all experiments, which are the plots of the errors $e_R$ and $e_t$ against the noise level added to synthetic points for all three variants, the runs on the UZH-FPV Easy and Hard sequences against the ground truth with the different features and matchers, and the comparison of timings with the predicted cost, and we will write the report. The work splits into data loading and the pipeline, the features and matchers module, synthetic data, the metrics, the eight-point algorithms with normalization and factorization, RANSAC, the experiments, and the report. Who does which step is not decided at this moment.
+\fi
+
+\bodyend
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  References (not counted)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Cite only sources you have actually read. Give a DOI or a link where
+% one exists. Cite the datasets and the main software you used.
+\begin{thebibliography}{9}
+
+\bibitem{Hartley97}
+R.~I.~Hartley,
+In defense of the eight-point algorithm,
+\emph{IEEE Transactions on Pattern Analysis and Machine Intelligence}
+\textbf{19}(6), 580--593, 1997.
+
+\bibitem{HartleyZisserman}
+R.~Hartley and A.~Zisserman,
+\emph{Multiple View Geometry in Computer Vision}, 2nd ed.,
+Cambridge University Press, 2004.
+
+\bibitem{ScaramuzzaI}
+D.~Scaramuzza and F.~Fraundorfer,
+Visual odometry [Tutorial],
+\emph{IEEE Robotics \& Automation Magazine}
+\textbf{18}(4), 80--92, 2011.
+
+\bibitem{ScaramuzzaII}
+F.~Fraundorfer and D.~Scaramuzza,
+Visual odometry: Part II: Matching, robustness, optimization, and applications,
+\emph{IEEE Robotics \& Automation Magazine}
+\textbf{19}(2), 78--90, 2012.
+
+\bibitem{UZHFPV}
+J.~Delmerico, T.~Cieslewski, H.~Rebecq, M.~Faessler and D.~Scaramuzza,
+Are we ready for autonomous drone racing? The UZH-FPV drone racing dataset,
+\emph{IEEE International Conference on Robotics and Automation (ICRA)}, 2019.
+\url{https://fpv.ifi.uzh.ch/}.
+
+\end{thebibliography}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Appendices (not counted)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ifnum\stage=3
+\appendix
+
+\section{Contribution statement}
+
+\guide{Required. Who did what, agreed by all members. Staff may adjust
+an individual grade if contributions are clearly unequal.}
+
+\noindent
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+  \toprule
+  Member & Contribution \\
+  \midrule
+  A.~A.~Lovelace & \dots \\
+  C.~Babbage     & \dots \\
+  \bottomrule
+\end{tabularx}
+
+\section{AI-use statement}
+
+\guide{Required. Which AI tools you used and for what: code, language
+editing, finding literature. Every member must be able to explain every
+equation and every line of the core code. If you used none, say so.}
+
+\section{Additional results}
+
+\guide{Optional. Proofs, extra figures and tables that support the main
+text. Reviewers are not required to read the appendices, so everything
+needed to follow the report belongs in the main body.}
+\fi
+
+ \end{document}
